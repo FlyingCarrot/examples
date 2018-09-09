@@ -13,12 +13,14 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 from visualizer import Visualizer
 from collections import OrderedDict
+from tqdm import tqdm
+from PIL import Image
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', required=True, help='cifar10 | lsun | imagenet | folder | lfw | fake')
 parser.add_argument('--dataroot', required=True, help='path to dataset')
-parser.add_argument('--checkpoints_dir', require=True)
+parser.add_argument('--checkpoints_dir', required=True)
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
 parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
 parser.add_argument('--imageSize', type=int, default=64, help='the height / width of the input image to network')
@@ -54,7 +56,29 @@ cudnn.benchmark = True
 if torch.cuda.is_available() and not opt.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-if opt.dataset in ['imagenet', 'folder', 'lfw', 'lsun']:
+class Datasets(torch.utils.data.Dataset):
+    
+    def __init__(self, root, transforms):
+        super(Datasets, self).__init__()
+        self.dataroot = root
+        self.images = []
+        assert(os.path.exists(self.dataroot))
+        for img in tqdm(os.listdir(self.dataroot)):
+            self.images.append(img)
+        self.images.sort()
+        self.transform = transforms
+            
+    def __getitem__(self, index):
+        img_path = self.images[index]
+        img = Image.open(img_path).convert('RGB')
+        img = self.transform(img)
+        return img
+
+    def __len__(self):
+        return len(self.images)
+
+
+if opt.dataset in ['imagenet', 'folder', 'lfw']:
     # folder dataset
     dataset = dset.ImageFolder(root=opt.dataroot,
                                transform=transforms.Compose([
@@ -64,13 +88,12 @@ if opt.dataset in ['imagenet', 'folder', 'lfw', 'lsun']:
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                ]))
 elif opt.dataset == 'lsun':
-    dataset = dset.LSUN(root=opt.dataroot, classes=['bedroom_train'],
-                        transform=transforms.Compose([
-                            transforms.Resize(opt.imageSize),
-                            transforms.CenterCrop(opt.imageSize),
-                            transforms.ToTensor(),
-                            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                        ]))
+    transform=transforms.Compose([
+                               transforms.Resize(opt.imageSize),
+                               transforms.ToTensor(),
+                               transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                           ])
+    dataset = Datasets(opt.dataroot, transform)
 elif opt.dataset == 'cifar10':
     dataset = dset.CIFAR10(root=opt.dataroot, download=True,
                            transform=transforms.Compose([
