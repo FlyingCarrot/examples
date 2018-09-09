@@ -11,6 +11,8 @@ import torch.utils.data
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
+from visualizer import Visualizer
+from collections import OrderedDict
 
 
 parser = argparse.ArgumentParser()
@@ -51,7 +53,7 @@ cudnn.benchmark = True
 if torch.cuda.is_available() and not opt.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-if opt.dataset in ['imagenet', 'folder', 'lfw']:
+if opt.dataset in ['imagenet', 'folder', 'lfw', 'lsun']:
     # folder dataset
     dataset = dset.ImageFolder(root=opt.dataroot,
                                transform=transforms.Compose([
@@ -182,6 +184,7 @@ if opt.netD != '':
     netD.load_state_dict(torch.load(opt.netD))
 print(netD)
 
+vis = Visualizer()
 criterion = nn.BCELoss()
 
 fixed_noise = torch.randn(opt.batchSize, nz, 1, 1, device=device)
@@ -199,7 +202,7 @@ for epoch in range(opt.niter):
         ###########################
         # train with real
         netD.zero_grad()
-        real_cpu = data[0].to(device)
+        real_cpu = data.to(device)
         batch_size = real_cpu.size(0)
         label = torch.full((batch_size,), real_label, device=device)
 
@@ -230,17 +233,21 @@ for epoch in range(opt.niter):
         D_G_z2 = output.mean().item()
         optimizerG.step()
 
-        print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
+        if i % 100 == 0:
+            visuals = OrderedDict()
+            visuals["real"] = real_cpu.detach()
+            visuals["fake"] = fake.detach()
+            losses = OrderedDict()
+            losses["D_loss"] = errD.detach()
+            losses["G_loss"] = errG.detach()
+            losses["D"] = D_x
+            losses["D_G_z1"] = D_G_z1
+            losses["D_G_z2"] = D_G_z2
+            vis.display_current_results(visuals, epoch, True)
+            vis.plot_current_losses(epoch, i/len(dataloader), losses)
+            print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
               % (epoch, opt.niter, i, len(dataloader),
                  errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
-        if i % 100 == 0:
-            vutils.save_image(real_cpu,
-                    '%s/real_samples.png' % opt.outf,
-                    normalize=True)
-            fake = netG(fixed_noise)
-            vutils.save_image(fake.detach(),
-                    '%s/fake_samples_epoch_%03d.png' % (opt.outf, epoch),
-                    normalize=True)
 
     # do checkpointing
     torch.save(netG.state_dict(), '%s/netG_epoch_%d.pth' % (opt.outf, epoch))
