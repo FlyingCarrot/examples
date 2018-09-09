@@ -18,6 +18,7 @@ from collections import OrderedDict
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', required=True, help='cifar10 | lsun | imagenet | folder | lfw | fake')
 parser.add_argument('--dataroot', required=True, help='path to dataset')
+parser.add_argument('--checkpoints_dir', require=True)
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
 parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
 parser.add_argument('--imageSize', type=int, default=64, help='the height / width of the input image to network')
@@ -184,7 +185,10 @@ if opt.netD != '':
     netD.load_state_dict(torch.load(opt.netD))
 print(netD)
 
-vis = Visualizer()
+if not os.path.exists(opt.checkpoints_dir):
+    os.mkdir(opt.checkpoints_dir)
+
+vis = Visualizer(opt)
 criterion = nn.BCELoss()
 
 fixed_noise = torch.randn(opt.batchSize, nz, 1, 1, device=device)

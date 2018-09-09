@@ -2,8 +2,8 @@ import numpy as np
 import os
 import ntpath
 import time
-from . import util
-from . import html
+import util
+import html
 from scipy.misc import imresize
 
 
@@ -46,6 +46,8 @@ class Visualizer():
             self.vis = visdom.Visdom(server="http://localhost", port=8097, env="main", raise_exceptions=True)
 
         if self.use_html:
+            if os.path.exists(os.path.join(opt.checkpoints_dir, self.name)):
+                os.mkdir(os.path.join(opt.checkpoints_dir, self.name))
             self.web_dir = os.path.join(opt.checkpoints_dir, self.name, 'web')
             self.img_dir = os.path.join(self.web_dir, 'images')
             print('create web directory %s...' % self.web_dir)
