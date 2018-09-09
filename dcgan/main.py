@@ -64,6 +64,7 @@ class Datasets(torch.utils.data.Dataset):
         self.images = []
         assert(os.path.exists(self.dataroot))
         for img in tqdm(os.listdir(self.dataroot)):
+            img = os.path.join(root, img)
             self.images.append(img)
         self.images.sort()
         self.transform = transforms

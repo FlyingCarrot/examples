@@ -42,7 +42,7 @@ class Visualizer():
         self.saved = False
         if self.display_id > 0:
             import visdom
-            self.ncols = opt.display_ncols
+            self.ncols = 2
             self.vis = visdom.Visdom(server="http://localhost", port=8097, env="main", raise_exceptions=True)
 
         if self.use_html:
