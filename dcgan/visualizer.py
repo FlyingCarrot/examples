@@ -46,7 +46,7 @@ class Visualizer():
             self.vis = visdom.Visdom(server="http://localhost", port=8097, env="main", raise_exceptions=True)
 
         if self.use_html:
-            if os.path.exists(os.path.join(opt.checkpoints_dir, self.name)):
+            if not os.path.exists(os.path.join(opt.checkpoints_dir, self.name)):
                 os.mkdir(os.path.join(opt.checkpoints_dir, self.name))
             self.web_dir = os.path.join(opt.checkpoints_dir, self.name, 'web')
             self.img_dir = os.path.join(self.web_dir, 'images')
