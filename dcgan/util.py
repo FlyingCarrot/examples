@@ -1,5 +1,6 @@
 from __future__ import print_function
 import torch
+import torchvision.utils as vutils
 import numpy as np
 from PIL import Image
 import os
@@ -12,7 +13,8 @@ def tensor2im(input_image, imtype=np.uint8):
         image_tensor = input_image.data
     else:
         return input_image
-    image_numpy = image_tensor[0].cpu().float().numpy()
+    image_tensor = vutils.make_grid(image_tensor, nrow=8, padding=2)
+    image_numpy = image_tensor.cpu().float().numpy()
     if image_numpy.shape[0] == 1:
         image_numpy = np.tile(image_numpy, (3, 1, 1))
     image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
